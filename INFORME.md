@@ -26,4 +26,4 @@ Link de descarga de qemu: https://www.qemu.org/download/#linux.
   Solución: Cambiar el parámetro a '-nographic' en el Makefile del repositorio del xv6-riscv. (Probablemente funcione con '-displaygtk', pero esto es solo para mostrar una ventana adicional)
 
 ## 3. Confirmación de que xv6 está funcionando correctamente.
-![Requisitos xv6](/mnt/c/Users/fer77/Pictures/Screenshots/Requisitos-xv6.png)
+![Requisitos xv6](~/iamges/Requisitos-xv6.png)
