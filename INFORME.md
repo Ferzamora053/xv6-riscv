@@ -6,7 +6,9 @@ Profesor: Sebastián Saez <br>
 
 
 ## 1. Pasos seguidos para instalar xv6
-- Instalar la versión 7.2.0 de qemu y compilarlo para riscv64-softmnu.
+- Instalar la versión 7.2.0 de qemu y compilarlo para riscv64-softmnu. <br>
+Link del repositorio de qemu: https://gitlab.com/qemu-project/qemu.git y la rama de la versión 7.2.0. <br>
+Link de descarga de qemu: https://www.qemu.org/download/#linux.
 - Instalar el riscv-gnu-toolchain y compilar para newlib
 - Compilar xv6-riscv
 
