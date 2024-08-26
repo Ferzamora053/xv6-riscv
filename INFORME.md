@@ -22,9 +22,10 @@ Para instalar el sistema operativo xv6-riscv, se siguieron los siguientes pasos.
     </li><br>
     <li>
       <strong>
-        Instalar la versión 7.2.0 de QEMU y compilarlo para riscv64-softmnu.
+        Instalar la versión 7.2.0 de QEMU y compilarlo para riscv64-softmmu.
       </strong> <br>
-      Para realizar esto, hay que clonar el repositorio en git de <a ref="https://gitlab.com/qemu-project/qemu.git">QEMU</a> en la carpeta de trabajo (<code>~/sysops</code>), en conjunto con la rama de la versión 7.2.0. Para ello, ocuparemos el comando <code>git clone -b v7.2.0 https://gitlab.com/qemu-project/qemu.git</code>, el cuál clona el repositorio de QEMU y la rama de la versión 7.2.0. Para poder continuar con la instalación, debemos movernos a la carpeta clonada, y logramos esto con el comando <code>cd qemu</code>. Luego configuramos la build de QEMU con <code>./configure --target-list=riscv64-softmmu</code> y construimos QEMU con el comando <code>make -j$(nproc)</code>.
+      Antes de instalar y compilar la versión 7.2.0, hay que descargar los siguientes paquetes con el siguiente comando <br> <code>sudo apt-get install git libglib2.0-dev libfdt-dev libpixman-1-dev zlib1g-dev ninja-build python3 python3-pip</code> <br>
+      Para realizar esto, hay que clonar el repositorio en git de <a ref="https://gitlab.com/qemu-project/qemu.git">QEMU</a> en la carpeta de trabajo (<code>~/sysops</code>), en conjunto con la rama de la versión 7.2.0. Para ello, ocuparemos el comando <code>git clone -b v7.2.0 https://gitlab.com/qemu-project/qemu.git</code>, el cuál clona el repositorio de QEMU y la rama de la versión 7.2.0. Para poder continuar con la instalación, debemos movernos a la carpeta clonada, y logramos esto con el comando <code>cd qemu</code>. Luego configuramos la build de QEMU con <code>./configure --target-list=riscv64-softmmu</code>, este comando es para especificar que queremos construir la versión RISC-V 64-bit con emulación completa del sistema y construimos QEMU con el comando <code>make -j$(nproc)</code>. Ocupamos el tag de '-j$(nproc)' para ocupar la mayor cantidad de trabajos en paralelo en relación a la cantidad de cores de CPU que tiene la máquina. Luego instalamos QEMU con <code>sudo make install</code>. 
       Link de descarga de qemu: https://www.qemu.org/download/#linux.
     </li><br>
     <li>
@@ -46,7 +47,7 @@ Para instalar el sistema operativo xv6-riscv, se siguieron los siguientes pasos.
 - Problema: No se encuentra una versión de riscv64 de GCC/binutils <br>
   Solución: Instalar y compilar el toolchain
 
-- Problema: No se encuentra una versión de un ejecutable QEMU funcional luego de compilar el QEMU para riscv64-softmnu <br>
+- Problema: No se encuentra una versión de un ejecutable QEMU funcional luego de compilar el QEMU para riscv64-softmmu <br>
   Solución: Instalar qemu con el siguiente comando: sudo apt-get install qemu-system
 
 - Problema: -display gtk. Parámetro 'type' no acepta el valor 'gtk'. <br>
