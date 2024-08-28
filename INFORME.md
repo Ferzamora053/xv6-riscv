@@ -45,17 +45,20 @@ Para instalar el sistema operativo xv6-riscv, se siguieron los siguientes pasos.
   </ol>
 
 ## 2. Problemas encontrados y soluciones
-- Problema: La versión 6.2.0 de qemu no compila correctamente el xv6-riscv. <br>
-  Solución: Instalar la versión 7.2.0
-
-- Problema: No se encuentra una versión de riscv64 de GCC/binutils <br>
-  Solución: Instalar y compilar el toolchain
-
-- Problema: No se encuentra una versión de un ejecutable QEMU funcional luego de compilar el QEMU para riscv64-softmmu <br>
-  Solución: Instalar qemu con el siguiente comando: sudo apt-get install qemu-system
-
-- Problema: -display gtk. Parámetro 'type' no acepta el valor 'gtk'. <br>
-  Solución: Cambiar el parámetro a '-nographic' en el Makefile del repositorio del xv6-riscv. (Probablemente funcione con '-displaygtk', pero esto es solo para mostrar una ventana adicional)
-
+- **<u>Problema:</u> No se encuentra una versión de riscv64 de GCC/binutils.**
+  <u>Solución:</u> En un inicio, se había encontrado un repositorio de una versión más antigua del sistema operativo xv6, también desarrollado por el MIT ([link](https://github.com/mit-pdos/xv6-public)), y ésta era capaz de funcionar sin tener que instalar el RISC-V GNU Compiler Toolchain, por lo que, al volver a instalar la versión xv6-riscv, éste no compilaba. Para solucionar esto, se compiló la versión "newlib" del RISC-V GNU Compiler Toolchain.
+  <br>
+- **<u>Problema:</u> QEMU no compila correctamente el xv6-riscv.**
+  <u>Solución:</u> Al ejecutar el comando `make qemu` en el directorio `~/sysops/xv6-riscv`, no se inicializa el sistema operativo xv6, es más, la terminal no responde a ningún comando, esto se puede ver en la siguiente imagen.
+  ![QEMU no compila xv6](images/QEMU-no-compila.png)
+  Al investigar que podría estar causando esto, se determinó que el problema tenía que ver con la versión de QEMU. Al ejecutar solo el comando `sudo apt-get install qemu-system`, se instala la versión 6.2.0, la cuál causa que no se compile correctamente el xv6. Se instaló la versión siguiente, que sería la 7.2.0, y se compiló correctamente el sistema operativo (El cuál se puede ver funcionando en la sección 3 del informe). 
+  <br>
+- **<u>Problema:</u> No se encuentra una versión de un ejecutable QEMU funcional luego de compilar el QEMU para riscv64-softmmu.**
+  <u>Solución:</u> Luego de haber instalado la versión 7.2.0 de QEMU para compilar correctamente el xv6-riscv, me encontré con el siguiente problema: "No se encontraba una versión ejecutable QEMU funcional", como se puede ver en la siguiente imagen.
+  ![No se encuentra una versión de QEMU](images/No-hay-QEMU.png)
+  Para solucionar esto, se ejecutó el siguiente comando `sudo apt-get install qemu-system`, el cuál permitió la compilación del xv6-riscv. Cabe destacar que cuando instalé la versión 7.2.0, yo estaba trabajando en una máquina virtual de Ubuntu nueva.
+  <br>
+- **<u>Problema:</u> -displaygtk: invalid option**
+  <u>Solución:</u> En un momento, se pensó que el error de compilación de QEMU tenía que ver con un parámetro dentro del Makefile del repositorio (el parámetro `-nographic` en la variable QEMUOPTS). Luego de un breve análisis, se determinó que este parámetro no tenía relación a la solución a dicho problema, y lo único que hace es renderizar una ventana adicional con el sistema operativo. Por lo que se cambió el parámetro `-displaygtk` a `-nographic` en el Makefile del repositorio del xv6-riscv.
 ## 3. Confirmación de que xv6 está funcionando correctamente.
 ![Requisitos xv6](images/Requisitos-xv6.png)
