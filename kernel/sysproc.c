@@ -21,41 +21,59 @@ sys_getpid(void)
   return myproc()->pid;
 }
 
+/**
+  sys_getppid - Recibe el ID del proceso padre.
+  Retorna el ID del proceso padre.
+**/
 uint64
 sys_getppid(void)
 {
   struct proc *p = myproc();
 
+  //  Si el proceso no tiene padre, retorna -1.
   if (p->parent == 0) {
     return -1;
   }
 
+  // Retorna el ID del padre.
   return p->parent->pid;
 }
 
+/**
+  sys_getancestor - Retorna el ID del ancestro en la posición
+                    en la lista de procesos que ha creado el
+                    proceso actual.
+ 
+  Nota: El ancestro en la posición 0 es el proceso actual.
+ 
+  Retorna el ID del ancestro solicitado o -1 si el proceso no
+  tiene un ancestro en esa posición.
+**/
 uint64
 sys_getancestor(void)
 {
-  int level;
-  struct proc *p = myproc();
+  int ancestor_level;
+  struct proc *current_process = myproc();
 
-  argint(0, &level);
+  argint(0, &ancestor_level);
 
-  if (level < 0) {
+  // Si el nivel de ancestro es menor que 0, retorna -1.
+  if (ancestor_level < 0) {
     return -1;
   }
 
-  while (level > 0)
-  {
-    if (p->parent) {
-      p = p->parent;
-      level--;
-    } else {
+  // Itera sobre la lista de procesos y busca el ancestro
+  // en la posición solicitada.
+  while (ancestor_level-- > 0) {
+    if (current_process->parent == 0) {
+      // Si el proceso no tiene padre en esa posición, retorna -1.
       return -1;
     }
+    current_process = current_process->parent;
   }
-  
-  return p->pid;
+
+  // Retorna el ID del ancestro solicitado.
+  return current_process->pid;
 }
 
 uint64
