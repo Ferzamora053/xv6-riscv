@@ -31,9 +31,9 @@ Profesor: Sebastián Saez
 
 
 ## 3. Dificultades encontradas y cómo se resolvieron.
-  - <strong><u>Problema:</u> Reparentación de un proceso sin padre (Hacer fork)</strong>\
-    <u>Solución:</u>
-  - **<u>Problema:</u> Reparentación de procesos con ancestros. (ni idea como solucionarlo).**\
-    <u>Solución:</u>
-  - **<u>Problema:</u> Cómo hacer múltiples fork a un proceso para tener múltiples ancestros.**\
-    <u>Solución:</u>
+  - **Problema: Reparentación de un proceso sin padre (Hacer fork)**\
+    Solución:
+  - **Problema: Reparentación de procesos con ancestros. (ni idea como solucionarlo).**\
+    Solución:
+  - **Problema: Cómo hacer múltiples fork a un proceso para tener múltiples ancestros.**\
+    Solución:
