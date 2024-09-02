@@ -27,9 +27,9 @@ test_getancestor(int level)
 {
   int apid = getancestor(level);
   if (apid >= 0) {
-    printf("Ancestor level %d: PID %d\n", level, apid);
+    printf("El ancestro con nivel %d tiene el PID %d\n", level, apid);
   } else {
-    printf("Ancestor level %d: No such ancestor\n", level);
+    printf("No existe un ancestro con nivel %d\n", level);
   }
 }
 

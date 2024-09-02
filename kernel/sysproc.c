@@ -26,7 +26,7 @@ sys_getppid(void)
 {
   struct proc *p = myproc();
 
-  if (p->parent ==0) {
+  if (p->parent == 0) {
     return -1;
   }
 
