@@ -139,6 +139,10 @@ UPROGS=\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
+	$U/_getpid\
+	$U/_getppid\
+	$U/_getancestor\
+	$U/_yosoytupadre\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
