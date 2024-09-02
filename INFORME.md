@@ -31,7 +31,7 @@ Profesor: Sebastián Saez
 
 
 ## 3. Dificultades encontradas y cómo se resolvieron.
-  - **<u>Problema:</u> Reparentación de un proceso sin padre (Hacer fork)**\
+  - <strong><u>Problema:</u> Reparentación de un proceso sin padre (Hacer fork)</strong>\
     <u>Solución:</u>
   - **<u>Problema:</u> Reparentación de procesos con ancestros. (ni idea como solucionarlo).**\
     <u>Solución:</u>
