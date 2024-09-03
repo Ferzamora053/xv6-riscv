@@ -407,7 +407,8 @@ Todos estos cambios se realizaron con el fin de poder utilizar las llamadas al s
     ![problema reparenting](images/problema-reparenting.png)
     Solución: No se encontró una solución a dicho problema. Esto se debe a como está construido el sistema operativo xv6, ya que, por defecto incluye una función que reparenta a los procesos hijos huérfanos al proceso `init` cuyo ID es 1 y tiene como hijo al proceso `sh`, también conocido como *shell* y tiene ID 2. Se intentó modificar varias veces la implementación del programa de prueba a fin de prevenir que los procesos se reparentaran al proceso `init`, pero no se logró llegar a un resultado correcto. Por otro lado, se modificó la implementación de la función de reparentación, incluso, hasta se eliminó todo rasgo de ésta, pero aun así persistía este comportamiento.\
     Aunque no se haya logrado detener la reparentación de procesos, se puede visualizar que, en el caso de que no existan más ancestros, la llamada funciona correctamente. Por ejemplo, al ejecutar la llamada `getancestor 5` la función retorna que no existe un ancestro de nivel 5. Les invito a probar con número más grandes.
-    <br>
+    
+
     Referencia de la función `reparent()`:
       
       ```c
