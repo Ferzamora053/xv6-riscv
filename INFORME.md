@@ -209,14 +209,158 @@ Profesor: Sebastián Saez
     return 0;
   }
   ```
-  Este 
+  Este código comienza verificando la cantidad de argumentos pasados al programa con argc, asegurándose de que se pase exactamente un argumento. Si no se cumple esta condición, imprime un mensaje de uso y sale con un código de salida 1.\
+  Luego, el argumento es convertido a un entero y guardado en la variable ancestors. A continuación, se crea una jerarquía de procesos mediante un bucle que ejecuta `fork()` dos veces, lo que genera procesos hijos. Si la llamada a `fork()` falla, se imprime un mensaje de error y el programa termina.\
+  Si `fork()` es exitoso, el proceso hijo continúa ejecutando el código después del bucle for, mientras que el proceso padre espera a que el hijo termine y luego sale.\
+  El proceso hijo imprime su propio ID de proceso usando `getpid()` y luego llama a la función `test_getancestor()` con el número de ancestros especificado por el usuario.\
+  Dependiendo del valor retornado por `getancestor()`, se imprime si el ancestro existe o no. Finalmente, el proceso hijo termina su ejecución con un código de salida 0. Este código está diseñado para probar la llamada al sistema `getancestor()` en un entorno jerárquico de procesos en xv6.
 
-  <br>
+  Al ejecutar el código, obtenemos el siguiente resultado.
+  ![resultado getancestor](images/resultado-getancestor.png)
 
   #### **Programa de prueba yosoytupadre.c**
-  Imagen de la implementacion del programa.
+  El programa `yosoytupadre.c` es la combinación de las dos llamadas anteriormente mencionadas y su código tiene la siguiente estructura:
+  ```c
+  #include "kernel/types.h"
+  #include "kernel/param.h"
+  #include "user/user.h"
+
+  void
+  test_getppid(void)
+  {
+    int child, pid, ppid;
+    
+    // Ejecutamos un fork.
+    child = fork();
+    
+    if (child < 0) {
+      printf("Fork fallido\n");
+      exit(1);
+    }
+
+    // Hijo.
+    if (child == 0) {
+      // Obtenemos el PID del proceso padre.
+      pid = getpid();
+      ppid = getppid();
+      // Imprimimos el ID del proceso padre.
+      printf("Hola! Soy el proceso con ID %d y mi padre tiene el ID %d\n", pid, ppid);
+      printf("Yo soy tu padre! - dijo el proceso con ID %d al proceso con ID %d\n", ppid, pid);
+      // Salimos el proceso hijo.
+      exit(0);
+    }
+    
+    // Padre.
+    else {
+      // Esperamos a que el proceso hijo termine.
+      wait(0);
+    }
+  }
+
+  void
+  test_getancestor(int level)
+  {
+    int apid = getancestor(level);
+    if (apid >= 0) {
+      printf("Mi ancestro de nivel %d tiene el PID %d\n", level, apid);
+    } else {
+      printf("No tengo un ancestro de nivel %d :(\n", level);
+    }
+  }
+
+  void
+  run_tests(int level)
+  {
+    printf("Ejecutando getppid:\n");
+    test_getppid();
+
+    printf("\nEjecutando getancestor:\n");
+
+    int pid;
+    // Cadena de forks para crear una jerarquía de procesos
+    for (int i = 0; i < 2; i++) {
+      pid = fork();
+      if (pid > 0) {
+        // El proceso padre espera a que el hijo termine
+        wait(0);
+        exit(0); // Salir una vez que el hijo haya terminado para mantener la jerarquía
+      } else if (pid == 0) {
+        // El proceso hijo continúa el bucle
+        continue;
+      } else {
+        // Fork fallido
+        printf("Fork fallado\n");
+        exit(1);
+      }
+    }
+
+    // En el último proceso hijo, se prueba getancestor
+    if (pid == 0) {
+      printf("Hola! Soy el proceso con ID %d\n", getpid());
+      test_getancestor(level);
+      exit(0);
+    }
+  }
+
+  int
+  main(int argc, char *argv[])
+  {
+    if (argc != 2) {
+      printf("Usage: %s <number_of_ancestors>\n", argv[0]);
+      exit(1);
+    }
+
+    int level = atoi(argv[1]);
+    run_tests(level);
+
+    exit(0);
+  }
+  ```
+  Y al ejecutar el programa, obtenemos el siguiente resultado.
+  ![resultado yosoytupadre](images/resultado-yosoytupadre.png)
 
 ## 2. Explicación de las modificaciones realizadas.
+Para ambas llamadas se realizaron las siguientes modificaciones en los archivos `syscall.h`, `syscall.c`, `user.h`, `usys.pl` y `Makefile`, además, de los cambios en `sysproc.c` y sus respectivos archivos de prueba en la carpeta `xv6-riscv/user/`.
+
+- `syscall.h`
+Se agregaron las siguientes líneas al final del archivo 
+  ```c
+  #define SYS_getppid 22
+  #define SYS_getancestor 23
+  ```
+- `syscall.c`
+Se agregaron las siguientes líneas al final del bloque `extern ... `
+  ```c
+  extern uint64 sys_getppid(void);
+  extern uint64 sys_getancestor(void);
+  ```
+  y al final de la función `static uint64 (*syscalls[])(void)`
+  ```c  
+  [SYS_getppid]     sys_getppid,
+  [SYS_getancestor] sys_getancestor,
+  ```
+- `user.h`
+Se agregaron las siguientes líneas al final del bloque de llamadas del sistema
+  ```c
+  int getppid(void);
+  int getancestor(int);
+  ```
+- `usys.pl`
+Se agregaron las siguientes líneas al final del archivo
+  ```c
+  entry("getppid");
+  entry("getancestor");
+  ```
+- `Makefile`
+Se agregaron las siguientes líneas al final de la variable `UPROGS`
+  ```Makefile
+	$U/_getpid\
+	$U/_getppid\
+	$U/_getancestor\
+	$U/_yosoytupadre\
+  ```
+Todos estos cambios se realizaron con el fin de poder utilizar las llamadas al sistema `getpid()` y `getancestor()` en los distintos programas de testeo.
+
 
 ## 3. Dificultades encontradas y cómo se resolvieron.
   - **Problema: Reparentación de un proceso sin padre (Hacer fork)**\

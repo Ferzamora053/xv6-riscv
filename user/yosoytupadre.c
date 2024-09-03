@@ -3,22 +3,34 @@
 #include "user/user.h"
 
 void
-test_getppid()
+test_getppid(void)
 {
-  int pid, ppid;
-
-  pid = fork();
+  int child, pid, ppid;
   
-  if (pid == 0) {
-    ppid = getppid();
-    printf("El proceso con ID %d tiene como padre al proceso con ID: %d\n", getpid(), ppid);
-    exit(0);
-  } else if (pid > 0) {
-    wait(0);
-    printf("El proceso con ID %d tiene como hijo al proceso con ID: %d\n", getpid(), pid);
-  } else {
-    printf("Fork fallado\n");
+  // Ejecutamos un fork.
+  child = fork();
+  
+  if (child < 0) {
+    printf("Fork fallido\n");
     exit(1);
+  }
+
+  // Hijo.
+  if (child == 0) {
+    // Obtenemos el PID del proceso padre.
+    pid = getpid();
+    ppid = getppid();
+    // Imprimimos el ID del proceso padre.
+    printf("Hola! Soy el proceso con ID %d y mi padre tiene el ID %d\n", pid, ppid);
+    printf("Yo soy tu padre! - dijo el proceso con ID %d al proceso con ID %d\n", ppid, pid);
+    // Salimos el proceso hijo.
+    exit(0);
+  }
+  
+  // Padre.
+  else {
+    // Esperamos a que el proceso hijo termine.
+    wait(0);
   }
 }
 
@@ -27,9 +39,9 @@ test_getancestor(int level)
 {
   int apid = getancestor(level);
   if (apid >= 0) {
-    printf("El ancestro con nivel %d tiene el PID %d\n", level, apid);
+    printf("Mi ancestro de nivel %d tiene el PID %d\n", level, apid);
   } else {
-    printf("No existe un ancestro con nivel %d\n", level);
+    printf("No tengo un ancestro de nivel %d :(\n", level);
   }
 }
 
@@ -61,7 +73,7 @@ run_tests(int level)
 
   // En el último proceso hijo, se prueba getancestor
   if (pid == 0) {
-    printf("ID del proceso actual: %d\n", getpid());
+    printf("Hola! Soy el proceso con ID %d\n", getpid());
     test_getancestor(level);
     exit(0);
   }
