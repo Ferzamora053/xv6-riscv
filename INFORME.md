@@ -6,7 +6,7 @@ Profesor: Sebastián Saez
 
 
 ## 1. Funcionamiento de las llamadas al sistema.
-  #### **Implementación de la llamada de getppid(void).**
+  ### **Implementación de la llamada de getppid(void).**
 
   Para implementar la llamada de sistema al sistema que retorne el ID del proceso padre del proceso que la invoca, se analizó el funcionamiento de la llamada al sistema que retorna el ID del proceso actual (**getpid()**). Esta llamada se encuentra definida en el archivo `xv6-riscv/kernel/sysproc.c` y tiene la siguiente forma
   ```c
@@ -98,7 +98,7 @@ Profesor: Sebastián Saez
   Al ejecutar este código, obtenemos el siguiente resultado
   ![resultado getppid](images/resultado-getppid.png)
 
-  #### **Implementación de la llamada getancestor(int)**
+  ### **Implementación de la llamada getancestor(int)**
   La implementación de la llamada **getancestor(int)** es una extensión de la llamada **getppid(void)**, donde buscamos saber el ID de procesos más "antiguos" que el padre. A diferencia de la función anterior, ahora es necesario que **getancestor()** reciba como parámetro un número entero, el cuál representa el nivel del ancestro cuyo ID queremos saber. Es decir, si ejecutamos `getancestor(0)`, deberíamos esperar que el ID retornado sea el mismo proceso, si, ahora ejecutamos `getancestor(1)`, deberíamos esperar que el ID retornado sea el del padre del proceso y así consecutivamente con los demás valores (que, por como está definida la implementación, deben ser mayores a 0). <br>
   Para ello, debemos implementar la llamada en el archivo `sysproc.c` y se ve de esta forma:
   ```c
@@ -215,10 +215,16 @@ Profesor: Sebastián Saez
   El proceso hijo imprime su propio ID de proceso usando `getpid()` y luego llama a la función `test_getancestor()` con el número de ancestros especificado por el usuario.\
   Dependiendo del valor retornado por `getancestor()`, se imprime si el ancestro existe o no. Finalmente, el proceso hijo termina su ejecución con un código de salida 0. Este código está diseñado para probar la llamada al sistema `getancestor()` en un entorno jerárquico de procesos en xv6.
 
+  Cabe destacar que se escogió de forma totalmente arbitraria que el número de ancestros de un proceso sería igual a 2, es decir, un proceso A tiene como ancestros a su padre y a su abuelo (padre del padre). La cantidad de ancestros se puede cambiar aumentando o disminuyendo el límite del `ciclo for` que crea la jerarquía de procesos.
+  ```c
+  // Crea una jerarquía de procesos.
+  for (int i = 0; i < 2; i++)
+  ```
+
   Al ejecutar el código, obtenemos el siguiente resultado.
   ![resultado getancestor](images/resultado-getancestor.png)
 
-  #### **Programa de prueba yosoytupadre.c**
+  ### **Programa de prueba yosoytupadre.c**
   El programa `yosoytupadre.c` es la combinación de las dos llamadas anteriormente mencionadas y su código tiene la siguiente estructura:
   ```c
   #include "kernel/types.h"
@@ -323,7 +329,7 @@ Profesor: Sebastián Saez
 Para ambas llamadas se realizaron las siguientes modificaciones en los archivos `syscall.h`, `syscall.c`, `user.h`, `usys.pl` y `Makefile`, además, de los cambios en `sysproc.c` y sus respectivos archivos de prueba en la carpeta `xv6-riscv/user/`.
 
 - `syscall.h`
-Se agregaron las siguientes líneas al final del archivo 
+Se agregaron las siguientes líneas al final del archivo para definir las llamadas con el fin de que el kernel pueda identificar cuál llamada es la que se está invocando.
   ```c
   #define SYS_getppid 22
   #define SYS_getancestor 23
@@ -339,33 +345,64 @@ Se agregaron las siguientes líneas al final del bloque `extern ... `
   [SYS_getppid]     sys_getppid,
   [SYS_getancestor] sys_getancestor,
   ```
+  Se hacen estas modificaciones para mapear los números de llamadas al sistema a sus correspondientes funciones en el kernel.
 - `user.h`
-Se agregaron las siguientes líneas al final del bloque de llamadas del sistema
+Se agregaron las siguientes líneas al final del bloque de llamadas del sistema para poder usar las llamadas al sistema de forma similar a cómo se llaman otras funciones de la biblioteca estándar.
   ```c
   int getppid(void);
   int getancestor(int);
   ```
 - `usys.pl`
-Se agregaron las siguientes líneas al final del archivo
+Se agregaron las siguientes líneas al final del archivo con el fin de permitir que las llamadas sean accesibles desde el espacio del usuario.
   ```c
   entry("getppid");
   entry("getancestor");
   ```
 - `Makefile`
-Se agregaron las siguientes líneas al final de la variable `UPROGS`
+Se agregaron las siguientes líneas al final de la variable `UPROGS` para permitir que los arhivos de testeo sean compilados e incluidos en el kernel.
   ```Makefile
-	$U/_getpid\
-	$U/_getppid\
-	$U/_getancestor\
-	$U/_yosoytupadre\
+  $U/_getpid\
+  $U/_getppid\
+  $U/_getancestor\
+  $U/_yosoytupadre\
   ```
 Todos estos cambios se realizaron con el fin de poder utilizar las llamadas al sistema `getpid()` y `getancestor()` en los distintos programas de testeo.
 
 
 ## 3. Dificultades encontradas y cómo se resolvieron.
-  - **Problema: Reparentación de un proceso sin padre (Hacer fork)**\
-    Solución:
-  - **Problema: Reparentación de procesos con ancestros. (ni idea como solucionarlo).**\
-    Solución:
-  - **Problema: Cómo hacer múltiples fork a un proceso para tener múltiples ancestros.**\
-    Solución:
+  - **Problema: getppid() siempre retorna 2 como resultado.**\
+    ![problema getppid](images/problema-getppid.png)
+    Solución: Para solucionar este problema, se modificó el programa de testeo. En una primera instancia, éste se veía de esta forma:
+    ```c
+    #include "user.h"
+    #include "stdio.h"
+
+    int main() {
+      int ppid = getppid();
+      printf("Hola! Soy el proceso con ID %d y mi padre tiene el ID %d\n", getpid(), ppid);
+      exit(0);
+    }
+    ```
+    El problema es que el proceso, cuyo ID del padre queremos saber, no se está ejecutando un `fork()`, de esta manera, dicho proceso nunca tiene un padre, por lo que es imposible que la llamada se ejecute de manera correcta. Esto se soluciona realizando un `fork()` del proceso, en conjunto con trabajar correctamente el uso de la llamada `fork()`. El código corregido del programa de testeo se puede visualizar en la parte 1 de este informe (Se omitió el código corregido debido a la extensión del informe).
+  - **Problema: Reparentación de procesos con multiples ancestros.**\
+    ![problema reparenting](images/problema-reparenting.png)
+    Solución: No se encontró una solución a dicho problema. Esto se debe a como está construido el sistema operativo xv6, ya que, por defecto incluye una función que reparenta[^1] a los procesos hijos huérfanos al proceso `init` cuyo ID es 1 y tiene como hijo al proceso `sh`, también conocido como *shell* y tiene ID 2. Se intentó modificar varias veces la implementación del programa de prueba a fin de prevenir que los procesos se reparentaran al proceso `init`, pero no se logró llegar a un resultado correcto. Por otro lado, se modificó la implementación de la función de reparentación, incluso, hasta se eliminó todo rasgo de ésta, pero aun así persistía este comportamiento.\
+    Aunque no se haya logrado detener la reparentación de procesos, se puede visualizar que, en el caso de que no existan más ancestros, la llamada funciona correctamente. Por ejemplo, al ejecutar la llamada `getancestor 5` la función retorna que no existe un ancestro de nivel 5. Les invito a probar con número más grandes.
+    <br>
+    [^1]: Referencia de la función `reparent()`:
+    ```c
+    // Pass p's abandoned children to init.
+    // Caller must hold wait_lock.
+    void
+    reparent(struct proc *p)
+    {
+      struct proc *pp;
+
+      for(pp = proc; pp < &proc[NPROC]; pp++){
+        if(pp->parent == p){
+          pp->parent = initproc;
+          wakeup(initproc);
+        }
+      }
+    }
+    ```
