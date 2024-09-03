@@ -8,7 +8,7 @@ Profesor: Sebastián Saez
 ## 1. Funcionamiento de las llamadas al sistema.
   ### **Implementación de la llamada de getppid(void).**
 
-  Para implementar la llamada de sistema al sistema que retorne el ID del proceso padre del proceso que la invoca, se analizó el funcionamiento de la llamada al sistema que retorna el ID del proceso actual (**getpid()**). Esta llamada se encuentra definida en el archivo `xv6-riscv/kernel/sysproc.c` y tiene la siguiente forma
+  Para implementar la llamada de sistema al sistema que retorne el ID del proceso padre del proceso que la invoca, se analizó el funcionamiento de la llamada al sistema que retorna el ID del proceso actual (**getpid()**). Esta llamada se encuentra definida en el archivo `kernel/sysproc.c` y tiene la siguiente forma
   ```c
   uint64
   sys_getpid(void)
@@ -16,7 +16,7 @@ Profesor: Sebastián Saez
     return myproc()->pid;
   }
   ```
-  donde lo retornado el es ID del proceso. Cabe destacar, que esta llamada no se encuentra disponible por defecto, por lo que hay que agregar un script en C, que muestre por pantalla el ID del proceso. Un ejemplo de un script que utilice la llamda **getpid()** es el siguiente:
+  donde lo retornado el es ID del proceso. Cabe destacar, que esta llamada no se encuentra disponible por defecto, por lo que hay que agregar un script en C, que muestre por pantalla el ID del proceso. Un ejemplo de un script que utilice la llamda **getpid()** es el siguiente (`user/getpid.c`):
   ```c
   #include "kernel/types.h"
   #include "user/user.h"
@@ -50,7 +50,7 @@ Profesor: Sebastián Saez
   }
   ```
   En esencia, lo que se realiza es crear una estructura `proc` a la cuál revisamos si tiene padre. En caso de no tener, retornamos -1, y si tiene, retornamos el ID del padre con `p->parent->pid`.\
-  Luego, creamos un archivo `.c` para testear si dicha llamada al sistema funciona como se solicita. A continuación se muestra un ejemplo de dicho archivo
+  Luego, creamos un archivo `.c` para testear si dicha llamada al sistema funciona como se solicita. A continuación se muestra un ejemplo de dicho archivo (`user/getppid.c`)
   ```c
   #include "kernel/types.h"
   #include "user/user.h"
@@ -139,7 +139,7 @@ Profesor: Sebastián Saez
   `current_process->pid`.
 
 
-  Para probar si dicha llamada funciona, creamos un archivo `.c` para realizar el testeo. Un ejemplo de dicho archivo es el siguiente:
+  Para probar si dicha llamada funciona, creamos un archivo `.c` para realizar el testeo. Un ejemplo de dicho archivo es el siguiente (`user/getancestor.c`):
   ```c
   #include "kernel/types.h"
   #include "kernel/param.h"
