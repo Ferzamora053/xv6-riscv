@@ -30,6 +30,8 @@ Profesor: Sebastián Saez
   }
   ```
   El cual retorna
+
+
   ![resultado getpid()](images/resultado-getpid.png)
   Podemos modificar la llamada `sys_getpid(void)` de la siguiente manera, para que retorne el ID del proceso padre.
   ```c
@@ -93,13 +95,17 @@ Profesor: Sebastián Saez
   ```
   Este código empieza creando un fork de un proceso con `child = fork()` para guardar el valor de la función `fork()`. Si el valor de esta función es 0, entonces, estamos en el proceso hijo; si es mayor a 0, estamos en el padre; y si es menor a 0, entonces, la llamada a `fork()` falló.\
   En primer lugar, revisamos con un `if statement` si ha fallado el `fork()` y salimos con código de salida 1.\
-  En segundo lugar, nos encontramos con otro `if statement` que revisa si el valor de `child` es igual a 1, Se cumple esta condición si estamos trabajando con el proceso hijo, donde guardamos las llamdas al sistema `getpid()` y `getppid()` en las variables `pid` y `ppid`, imprimimos sus valores y terminamos el proceso hijo con código de salida 0.\
+  En segundo lugar, nos encontramos con otro `if statement` que revisa si el valor de `child` es igual a 1. Si se cumple esta condición si estamos trabajando con el proceso hijo, donde guardamos las llamdas al sistema `getpid()` y `getppid()` en las variables `pid` y `ppid`, respectivamente, imprimimos sus valores y terminamos el proceso hijo con código de salida 0.\
   Por último, tenemos un `else statement` que asegura que los procesos padres esperen que sus hijos termine para una finalización ordenada. <br>
   Al ejecutar este código, obtenemos el siguiente resultado
+
+
   ![resultado getppid](images/resultado-getppid.png)
 
   ### **Implementación de la llamada getancestor(int)**
-  La implementación de la llamada **getancestor(int)** es una extensión de la llamada **getppid(void)**, donde buscamos saber el ID de procesos más "antiguos" que el padre. A diferencia de la función anterior, ahora es necesario que **getancestor()** reciba como parámetro un número entero, el cuál representa el nivel del ancestro cuyo ID queremos saber. Es decir, si ejecutamos `getancestor(0)`, deberíamos esperar que el ID retornado sea el mismo proceso, si, ahora ejecutamos `getancestor(1)`, deberíamos esperar que el ID retornado sea el del padre del proceso y así consecutivamente con los demás valores (que, por como está definida la implementación, deben ser mayores a 0). <br>
+  La implementación de la llamada **getancestor(int)** es una extensión de la llamada **getppid(void)**, donde buscamos saber el ID de procesos más "antiguos" que el padre. A diferencia de la función anterior, ahora es necesario que **getancestor()** reciba como parámetro un número entero, el cuál representa el nivel del ancestro cuyo ID queremos saber. Es decir, si ejecutamos `getancestor(0)`, deberíamos esperar que el ID retornado sea el mismo proceso, si, ahora, ejecutamos `getancestor(1)`, deberíamos esperar que el ID retornado sea el del padre del proceso y así consecutivamente con los demás valores (que, por como está definida la implementación, deben ser mayores a 0). 
+
+
   Para ello, debemos implementar la llamada en el archivo `sysproc.c` y se ve de esta forma:
   ```c
   uint64
@@ -129,7 +135,10 @@ Profesor: Sebastián Saez
     return current_process->pid;
   }
   ```
-  Donde revisamos, primero, si el nivel ingresado es mayor a 0, que en caso contrario retornamos -1 y terminamos la llamada. En el caso que se cumpla que el valor ingresado sea mayor a 0, inicializamos un ciclo while que recorre los ancestor hasta llegar al nivel solicitado. Los padres de los procesos los guardamos en la variable `current_process` (estructura de tipo `proc`) y al finalizar el ciclo while, retornarmos `current_process->pid`.\
+  Donde revisamos, primero, si el nivel ingresado es mayor a 0, que en caso contrario retornamos -1 y terminamos la llamada. En el caso que se cumpla que el valor ingresado sea mayor a 0, inicializamos un ciclo while que recorre los ancestor hasta llegar al nivel solicitado. Los padres de los procesos los guardamos en la variable `current_process` (estructura de tipo `proc`) y al finalizar el ciclo while, retornarmos\
+  `current_process->pid`.
+
+
   Para probar si dicha llamada funciona, creamos un archivo `.c` para realizar el testeo. Un ejemplo de dicho archivo es el siguiente:
   ```c
   #include "kernel/types.h"
@@ -222,6 +231,8 @@ Profesor: Sebastián Saez
   ```
 
   Al ejecutar el código, obtenemos el siguiente resultado.
+
+
   ![resultado getancestor](images/resultado-getancestor.png)
 
   ### **Programa de prueba yosoytupadre.c**
@@ -323,6 +334,8 @@ Profesor: Sebastián Saez
   }
   ```
   Y al ejecutar el programa, obtenemos el siguiente resultado.
+
+
   ![resultado yosoytupadre](images/resultado-yosoytupadre.png)
 
 ## 2. Explicación de las modificaciones realizadas.
@@ -370,7 +383,9 @@ Todos estos cambios se realizaron con el fin de poder utilizar las llamadas al s
 
 
 ## 3. Dificultades encontradas y cómo se resolvieron.
-  - **Problema: getppid() siempre retorna 2 como resultado.**\
+  - **Problema: getppid() siempre retorna 2 como resultado.**
+
+
     ![problema getppid](images/problema-getppid.png)
     Solución: Para solucionar este problema, se modificó el programa de testeo. En una primera instancia, éste se veía de esta forma:
     ```c
@@ -384,25 +399,30 @@ Todos estos cambios se realizaron con el fin de poder utilizar las llamadas al s
     }
     ```
     El problema es que el proceso, cuyo ID del padre queremos saber, no se está ejecutando un `fork()`, de esta manera, dicho proceso nunca tiene un padre, por lo que es imposible que la llamada se ejecute de manera correcta. Esto se soluciona realizando un `fork()` del proceso, en conjunto con trabajar correctamente el uso de la llamada `fork()`. El código corregido del programa de testeo se puede visualizar en la parte 1 de este informe (Se omitió el código corregido debido a la extensión del informe).
-  - **Problema: Reparentación de procesos con multiples ancestros.**\
+
+
+  - **Problema: Reparentación de procesos con multiples ancestros.**
+
+
     ![problema reparenting](images/problema-reparenting.png)
-    Solución: No se encontró una solución a dicho problema. Esto se debe a como está construido el sistema operativo xv6, ya que, por defecto incluye una función que reparenta[^1] a los procesos hijos huérfanos al proceso `init` cuyo ID es 1 y tiene como hijo al proceso `sh`, también conocido como *shell* y tiene ID 2. Se intentó modificar varias veces la implementación del programa de prueba a fin de prevenir que los procesos se reparentaran al proceso `init`, pero no se logró llegar a un resultado correcto. Por otro lado, se modificó la implementación de la función de reparentación, incluso, hasta se eliminó todo rasgo de ésta, pero aun así persistía este comportamiento.\
+    Solución: No se encontró una solución a dicho problema. Esto se debe a como está construido el sistema operativo xv6, ya que, por defecto incluye una función que reparenta a los procesos hijos huérfanos al proceso `init` cuyo ID es 1 y tiene como hijo al proceso `sh`, también conocido como *shell* y tiene ID 2. Se intentó modificar varias veces la implementación del programa de prueba a fin de prevenir que los procesos se reparentaran al proceso `init`, pero no se logró llegar a un resultado correcto. Por otro lado, se modificó la implementación de la función de reparentación, incluso, hasta se eliminó todo rasgo de ésta, pero aun así persistía este comportamiento.\
     Aunque no se haya logrado detener la reparentación de procesos, se puede visualizar que, en el caso de que no existan más ancestros, la llamada funciona correctamente. Por ejemplo, al ejecutar la llamada `getancestor 5` la función retorna que no existe un ancestro de nivel 5. Les invito a probar con número más grandes.
     <br>
-    [^1]: Referencia de la función `reparent()`:
-    ```c
-    // Pass p's abandoned children to init.
-    // Caller must hold wait_lock.
-    void
-    reparent(struct proc *p)
-    {
-      struct proc *pp;
+    Referencia de la función `reparent()`:
+      
+      ```c
+      // Pass p's abandoned children to init.
+      // Caller must hold wait_lock.
+      void
+      reparent(struct proc *p)
+      {
+        struct proc *pp;
 
-      for(pp = proc; pp < &proc[NPROC]; pp++){
-        if(pp->parent == p){
-          pp->parent = initproc;
-          wakeup(initproc);
+        for(pp = proc; pp < &proc[NPROC]; pp++){
+          if(pp->parent == p){
+            pp->parent = initproc;
+            wakeup(initproc);
+          }
         }
       }
-    }
-    ```
+      ```
