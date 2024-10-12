@@ -22,6 +22,13 @@ sys_getpid(void)
 }
 
 uint64
+sys_getpriority(void)
+{
+  struct proc *proc = myproc();
+  return proc->priority;
+}
+
+uint64
 sys_fork(void)
 {
   return fork();

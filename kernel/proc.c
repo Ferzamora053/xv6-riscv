@@ -122,6 +122,8 @@ allocproc(void)
   return 0;
 
 found:
+  p->priority = 0;
+  p->boost = 1;
   p->pid = allocpid();
   p->state = USED;
 
@@ -316,6 +318,8 @@ fork(void)
 
   acquire(&wait_lock);
   np->parent = p;
+  np->priority = p->priority;
+  np->boost = p->boost;
   release(&wait_lock);
 
   acquire(&np->lock);
@@ -454,26 +458,48 @@ scheduler(void)
     // processes are waiting.
     intr_on();
 
-    int found = 0;
-    for(p = proc; p < &proc[NPROC]; p++) {
-      acquire(&p->lock);
-      if(p->state == RUNNABLE) {
-        // Switch to chosen process.  It is the process's job
-        // to release its lock and then reacquire it
-        // before jumping back to us.
-        p->state = RUNNING;
-        c->proc = p;
-        swtch(&c->context, &p->context);
+    struct proc *high_p = 0;
 
-        // Process is done running for now.
-        // It should have changed its p->state before coming back.
-        c->proc = 0;
-        found = 1;
+    // Find the process with the highest priority
+    for (p = proc; p < &proc[NPROC]; p++) {
+      acquire(&p->lock);
+      if (p->state == RUNNABLE) {
+        // Aumentar la prioridad de todos los procesos existentes en 1.
+        p->priority += p->boost;
+
+        // Si la prioridad es mayor o igual a 9, se cambia el boost a -1.
+        if (p->priority >= 9) {
+          p->boost = -1;
+        }
+
+        // Si la prioridad es menor o igual a 0, se cambia el boost a 1.
+        else if (p->priority <= 0) {
+          p->boost = 1;
+        }
+
+        // Si no hay un proceso con prioridad alta o la prioridad del proceso actual
+        // es menor a la prioridad del proceso con prioridad alta.  
+        // Se actualiza la prioridad del proceso con prioridad alta.
+        if (high_p == 0 || p->priority < high_p->priority) {
+          high_p = p;
+        }
       }
       release(&p->lock);
     }
-    if(found == 0) {
-      // nothing to run; stop running on this core until an interrupt.
+
+    // Si hay un proceso con prioridad alta
+    // se cambia el estado a RUNNING y se ejecuta.
+    if (high_p != 0) {
+      acquire(&high_p->lock);
+      if (high_p->state == RUNNABLE) {
+        high_p->state = RUNNING;
+        c->proc = high_p;
+        swtch(&c->context, &high_p->context);
+
+        c->proc = 0;
+      }
+      release(&high_p->lock);
+    } else {
       intr_on();
       asm volatile("wfi");
     }
