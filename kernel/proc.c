@@ -122,10 +122,10 @@ allocproc(void)
   return 0;
 
 found:
-  p->priority = 0;
-  p->boost = 1;
   p->pid = allocpid();
   p->state = USED;
+  p->priority = 0;
+  p->boost = 1;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -318,8 +318,6 @@ fork(void)
 
   acquire(&wait_lock);
   np->parent = p;
-  np->priority = p->priority;
-  np->boost = p->boost;
   release(&wait_lock);
 
   acquire(&np->lock);
