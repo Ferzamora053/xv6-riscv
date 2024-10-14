@@ -24,8 +24,13 @@ sys_getpid(void)
 uint64
 sys_getpriority(void)
 {
-  struct proc *proc = myproc();
-  return proc->priority;
+  return myproc()->priority;
+}
+
+uint64
+sys_getboost(void)
+{
+  return myproc()->boost;
 }
 
 uint64

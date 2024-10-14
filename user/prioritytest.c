@@ -10,7 +10,7 @@ int main()
       printf("Fork failed\n");
       exit(1);
     } else if (pid == 0) {
-      printf("Ejecutando proceso %d con pid %d y prioridad %d\n", i + 1, getpid(), getpriority());
+      printf("Ejecutando proceso %d con pid %d, prioridad %d y boost %d\n", i + 1, getpid(), getpriority(), getboost());
       sleep(3);
       exit(0);
     } else {
