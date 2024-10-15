@@ -97,6 +97,33 @@ Comparando el nuevo programador de procesos con el anterior, podemos notar que l
 Una vez, realizado el ciclo `for` para determinar el proceso de mayor prioridad, adquirimos un `lock` para éste y cambiamos su estado de `RUNNABLE` a `RUNNING`, cambiamos el proceso que está ocupando la CPU a éste y realizamos un context switch con `swthc(&c->context, &high_p->context)`. Cuando el proceso termine de ejecutarse, cambiamos el proceso de la CPU a uno vacío para permitir que otro proceso la ocupe y liberamos el `lock` del proceso `high_p`. En caso de que no haya algún proceso en estado `RUNNABLE`, habilitamos las interrupciones con `intr_on()` para evitar bloqueos, y el procesador entra en un estado de espera eficiente con la instrucción `wfi` hasta que ocurra una interrupción que despierte al scheduler, evitando así el desperdicio de ciclos de CPU.
 
 ### Programa de prueba.
+Para probar el correcto funcionamiento de nuestro scheduler, se creó el siguiente programa de prueba:
+```c
+#include "kernel/types.h"
+#include "user/user.h"
+
+int main()
+{
+  for (int i = 0; i < 20; i++) { // it has to run 20 processes
+    int pid = fork();
+
+    if (pid < 0) {
+      printf("Fork failed\n");
+      exit(1);
+    } else if (pid == 0) {
+      printf("Ejecutando proceso %d con pid %d, prioridad %d y boost %d\n", i + 1, getpid(), getpriority(), getboost());
+      exit(0);
+    } else {
+      sleep(5);
+      wait(0);
+    }
+  }
+
+  exit(0);
+}
+```
+Este programa empieza creando 20 procesos hijos utilizando un ciclo `for` en donde cada iteración se hace una llamada al sistema `fork()`. Según el resultado que retorne la función `fork()`, se utilizan 3 condicionales para manejar la creación de los procesos hijos. Si la función retorna un valor menor a 0, entonces, ha fallado el proceso de creación de un hijo, por lo que, el programa imprime un mensaje de error y termina con un código de salida de 1. En el caso que la función retorne un 0, entonces, se ha creado un proceso hijo y nos encontramos en éste, por lo que se imprime un mensaje con el número del proceso (donde se prefiere empezar por 1 envés de 0, por lo que se ocupa `i + 1`), el id del proceso con la llamada al sistema `getpid()`, la prioridad del proceso con la llamada al sistema `getpriority()` y el valor del boost del proceso con la llamada al sistema `getboost()`. Luego, el proceso hijo termina con `exit(0)`. Por último, si el valor que retorne la función es mayor a 0, entonces, nos encontramos en el proceeso padre, por lo que, este, primero, espera a que el hijo termine y luego se duerme durante 5 tiempos. El resultado del programa se puede visualizar en la siguiente imagen.
+
 
 
 ## 2. Explicación de las modificaciones realizadas
@@ -133,6 +160,118 @@ Para implementar un scheduler basado en prioridades, se hicieron modificaciones 
   entry("getpriority");
   entry("getboost");
   ```
+- `proc.c`
+  La funciones modificadas se muestran a continuación. La explicación de los cambios se pueden encontrar en la sección de implementación del programador de procesos.
+  - `allocproc()`
+    ```c
+    static struct proc*
+    allocproc(void)
+    {
+      struct proc *p;
+
+      for(p = proc; p < &proc[NPROC]; p++) {
+        acquire(&p->lock);
+        if(p->state == UNUSED) {
+          goto found;
+        } else {
+          release(&p->lock);
+        }
+      }
+      return 0;
+
+    found:
+      p->pid = allocpid();
+      p->state = USED;
+      p->priority = 0;
+      p->boost = 1;
+
+      // Allocate a trapframe page.
+      if((p->trapframe = (struct trapframe *)kalloc()) == 0){
+        freeproc(p);
+        release(&p->lock);
+        return 0;
+      }
+
+      // An empty user page table.
+      p->pagetable = proc_pagetable(p);
+      if(p->pagetable == 0){
+        freeproc(p);
+        release(&p->lock);
+        return 0;
+      }
+
+      // Set up new context to start executing at forkret,
+      // which returns to user space.
+      memset(&p->context, 0, sizeof(p->context));
+      p->context.ra = (uint64)forkret;
+      p->context.sp = p->kstack + PGSIZE;
+
+      return p;
+    }
+    ```
+  - `scheduler()`
+    ```c
+    void
+    scheduler(void)
+    {
+      struct proc *p;
+      struct cpu *c = mycpu();
+
+      c->proc = 0;
+      for(;;){
+        // The most recent process to run may have had interrupts
+        // turned off; enable them to avoid a deadlock if all
+        // processes are waiting.
+        intr_on();
+
+        struct proc *high_p = 0;
+
+        // Find the process with the highest priority
+        for (p = proc; p < &proc[NPROC]; p++) {
+          acquire(&p->lock);
+          if (p->state == RUNNABLE) {
+            // Aumentar la prioridad de todos los procesos existentes en 1.
+            p->priority += p->boost;
+
+            // Si la prioridad es mayor o igual a 9, se cambia el boost a -1.
+            if (p->priority >= 9) {
+              p->boost = -1;
+            }
+
+            // Si la prioridad es menor o igual a 0, se cambia el boost a 1.
+            else if (p->priority <= 0) {
+              p->boost = 1;
+            }
+
+            // Si no hay un proceso con prioridad alta o la prioridad del proceso actual
+            // es menor a la prioridad del proceso con prioridad alta.  
+            // Se actualiza la prioridad del proceso con prioridad alta.
+            if (high_p == 0 || p->priority < high_p->priority) {
+              high_p = p;
+            }
+          }
+          release(&p->lock);
+        }
+
+        // Si hay un proceso con prioridad alta
+        // se cambia el estado a RUNNING y se ejecuta.
+        if (high_p != 0) {
+          acquire(&high_p->lock);
+          if (high_p->state == RUNNABLE) {
+            high_p->state = RUNNING;
+            c->proc = high_p;
+            swtch(&c->context, &high_p->context);
+
+            c->proc = 0;
+          }
+          release(&high_p->lock);
+        } else {
+          intr_on();
+          asm volatile("wfi");
+        }
+      }
+    }
+    ```
 - `proc.h`
   Se agregaron los atributos de `priority` y `boost` a la estructura del proceso y queda como:
   ```c
@@ -163,6 +302,21 @@ Para implementar un scheduler basado en prioridades, se hicieron modificaciones 
     struct inode *cwd;           // Current directory
     char name[16];               // Process name (debugging)
   };
+  ```
+- `sysproc.c`
+  Se agregaron las siguientes funciones en el archivo, para poder mostrar la prioridad y el boost de cada proceso.
+  ```c
+  uint64
+  sys_getpriority(void)
+  {
+    return myproc()->priority;
+  }
+
+  uint64
+  sys_getboost(void)
+  {
+    return myproc()->boost;
+  }
   ```
 - `Makefile`
   Se agregaron las siguientes líneas al final de la variable `UPROGS` para permitir que los arhivos de testeo sean compilados e incluidos en el kernel.
