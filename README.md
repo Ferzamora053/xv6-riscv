@@ -114,8 +114,8 @@ int main()
       printf("Ejecutando proceso %d con pid %d, prioridad %d y boost %d\n", i + 1, getpid(), getpriority(), getboost());
       exit(0);
     } else {
-      sleep(5);
       wait(0);
+      sleep(5);
     }
   }
 
@@ -124,7 +124,7 @@ int main()
 ```
 Este programa empieza creando 20 procesos hijos utilizando un ciclo `for` en donde cada iteración se hace una llamada al sistema `fork()`. Según el resultado que retorne la función `fork()`, se utilizan 3 condicionales para manejar la creación de los procesos hijos. Si la función retorna un valor menor a 0, entonces, ha fallado el proceso de creación de un hijo, por lo que, el programa imprime un mensaje de error y termina con un código de salida de 1. En el caso que la función retorne un 0, entonces, se ha creado un proceso hijo y nos encontramos en éste, por lo que se imprime un mensaje con el número del proceso (donde se prefiere empezar por 1 envés de 0, por lo que se ocupa `i + 1`), el id del proceso con la llamada al sistema `getpid()`, la prioridad del proceso con la llamada al sistema `getpriority()` y el valor del boost del proceso con la llamada al sistema `getboost()`. Luego, el proceso hijo termina con `exit(0)`. Por último, si el valor que retorne la función es mayor a 0, entonces, nos encontramos en el proceeso padre, por lo que, este, primero, espera a que el hijo termine y luego se duerme durante 5 tiempos. El resultado del programa se puede visualizar en la siguiente imagen.
 
-
+![resultado programa de prueba](images/correct-output.png)  
 
 ## 2. Explicación de las modificaciones realizadas
 Para implementar un scheduler basado en prioridades, se hicieron modificaciones en los siguientes archivos `syscall.h`, `syscall.c`, `user.h`, `usys.pl`, `proc.c`, `proc.h`, `sysproc.c` y `Makefile`, además del archivo de prueba en la carpeta `xv6-riscv/user/`.
@@ -329,3 +329,18 @@ Para implementar un scheduler basado en prioridades, se hicieron modificaciones 
 Todos estos cambios se realizaron con el fin de poder utilizar las llamadas al sistema `getpriority()` y `getboost()` en el programa de testeo.
 
 ## 3. Dificultades encontradas y cómo se resolvieron
+
+  - **Problema: *panic: kerneltrap***
+  ![panic kerneltrap](images/panic-kerneltrap.png)
+  Solución: Para solucionar este problema, se tuvo que modificar la primera implementación del scheduler, ya que, el error `kerneltrap` con `scause=0xc` sugiere un fallo en el acceso a la memoria dado por una acceso inválido cuando el programador de procesos está modificando las prioridades y sus aumentos. El cambio que se hizo, fue mover la implementación de la lógica de control de prioridades del proceso del bloque cuando se encuentra un proceso de alta prioridad, al bloque donde cicla por todos los procesos. Además, se incluyo la condición de que se ejecute el proceso con mayor prioridad si y solo si éste tiene `RUNNABLE` como estado (`high_p->status`).
+
+  - **Problema: El texto queda mezclado al ejecutar el programa de prueba**
+  ![jumbled output](images/jumbled-output.png)
+  Solución: Para arreglar este problema de concurrencia entre los procesos hijos, se movió este ciclo for
+    ```c
+    // El padre espera a que los hijos terminen    
+    for (int i = 0; i < 20; i++) {
+      wait(0);
+    }
+    ```
+    a un `else statement` dentro del ciclo for donde se crean los hijos, de tal manera que el código que permite el correcto funcionamiento es el que se encuentra en la sección de programa de prueba.
